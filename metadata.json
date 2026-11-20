@@ -1,0 +1,6 @@
+{
+  "name": "Apex Finance Nigeria",
+  "description": "CBN-compliant institutional digital banking, Naira & USD domiciliary vaults, instant NIBSS NIP settlements, BVN/NIN KYC verification, and treasury operations for Nigeria.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

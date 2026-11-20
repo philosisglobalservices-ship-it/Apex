@@ -1,0 +1,518 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered Apex Finance client profile and KYC verification tier.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Authentication user UID."
+        },
+        "accountCode": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "description": "Unique Apex Finance account identifier (e.g. #APX-8841)."
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Legal full name of the account holder."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 120,
+          "description": "Verified account email address."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 32,
+          "description": "Contact phone number."
+        },
+        "accountType": {
+          "type": "string",
+          "enum": ["personal", "business"],
+          "description": "Account tier classification."
+        },
+        "kycTierStatus": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 40,
+          "description": "KYC verification stage label."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of account creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest profile update."
+        }
+      },
+      "required": [
+        "uid",
+        "accountCode",
+        "fullName",
+        "email",
+        "phone",
+        "accountType",
+        "kycTierStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WalletVault": {
+      "title": "WalletVault",
+      "description": "Multi-currency financial vault balances and card security state for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "usdBalance": {
+          "type": "number",
+          "description": "Primary NGN/USD vault balance."
+        },
+        "eurBalance": {
+          "type": "number",
+          "description": "SEPA EUR vault balance."
+        },
+        "usdcBalance": {
+          "type": "number",
+          "description": "USDC treasury vault balance."
+        },
+        "cardFrozen": {
+          "type": "boolean",
+          "description": "Whether the Black Titanium virtual card is frozen."
+        },
+        "accountFrozen": {
+          "type": "boolean",
+          "description": "Compliance Post-No-Debit freeze status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of vault creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest balance or card update."
+        }
+      },
+      "required": [
+        "userId",
+        "usdBalance",
+        "eurBalance",
+        "usdcBalance",
+        "cardFrozen",
+        "accountFrozen",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TransactionRecord": {
+      "title": "TransactionRecord",
+      "description": "Immutable financial ledger record for deposits, NIBSS transfers, P2P payments, and yield.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140,
+          "description": "Human-readable transaction summary."
+        },
+        "timestamp": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "description": "Display timestamp label."
+        },
+        "status": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Category or settlement status."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Signed transaction amount."
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["USD", "EUR", "USDC", "NGN"],
+          "description": "Settlement currency code."
+        },
+        "vaultLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Source or destination vault rail label."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["inflow", "outflow", "yield"],
+          "description": "Ledger direction classification."
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Material icon identifier."
+        },
+        "rail": {
+          "type": "string",
+          "enum": ["contacts", "nibss", "deposit", "yield"],
+          "description": "Payment rail used."
+        },
+        "recipientName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Verified recipient full name."
+        },
+        "recipientTag": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Recipient handle or NUBAN bank summary."
+        },
+        "bankCode": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "CBN destination bank code for NIBSS transfers."
+        },
+        "accountNumber": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "10-digit NUBAN account number."
+        },
+        "nibssSessionId": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "NIBSS NIP enquiry session ID."
+        },
+        "referenceId": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64,
+          "description": "Unique clearing reference ID."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of transaction creation."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "timestamp",
+        "status",
+        "amount",
+        "currency",
+        "vaultLabel",
+        "type",
+        "icon",
+        "rail",
+        "referenceId",
+        "createdAt"
+      ]
+    },
+    "NotificationAlert": {
+      "title": "NotificationAlert",
+      "description": "Security, settlement, and KYC onboarding notifications for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Recipient Firebase Auth UID."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "Notification headline."
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 280,
+          "description": "Notification body message."
+        },
+        "time": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Display relative time."
+        },
+        "unread": {
+          "type": "boolean",
+          "description": "Unread state flag."
+        },
+        "targetScreen": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Optional screen identifier for navigation."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": ["userId", "title", "detail", "time", "unread", "createdAt"]
+    },
+    "ManagedAccount": {
+      "title": "ManagedAccount",
+      "description": "Compliance directory account managed via Admin Operations Hub.",
+      "type": "object",
+      "properties": {
+        "accountCode": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "description": "Account code identifier."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Entity or customer name."
+        },
+        "tier": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Account tier."
+        },
+        "avatar": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Avatar URL."
+        },
+        "balance": {
+          "type": "number",
+          "description": "Reported balance."
+        },
+        "kycStatus": {
+          "type": "string",
+          "enum": ["KYC Verified", "AML Flagged", "Verified Entity", "Pending KYC"],
+          "description": "Compliance KYC status."
+        },
+        "roleLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Assigned RBAC role label."
+        },
+        "roleCategory": {
+          "type": "string",
+          "enum": ["Compliance Officer", "Institutional", "Personal"],
+          "description": "Role filter category."
+        },
+        "limitLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Compliance limit badge."
+        },
+        "alertNote": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional AML hold explanation."
+        },
+        "frozen": {
+          "type": "boolean",
+          "description": "Post-No-Debit freeze state."
+        },
+        "ownerUid": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Linked Firebase UID if self-registered."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "accountCode",
+        "name",
+        "tier",
+        "avatar",
+        "balance",
+        "kycStatus",
+        "roleLabel",
+        "roleCategory",
+        "limitLabel",
+        "frozen",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable compliance and governance audit log entry.",
+      "type": "object",
+      "properties": {
+        "event": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160,
+          "description": "Audit event description."
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Acting identity or role label."
+        },
+        "actorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the actor."
+        },
+        "timeAgo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Display relative timestamp."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": ["event", "actor", "actorUid", "timeAgo", "createdAt"]
+    },
+    "NigerianBank": {
+      "title": "NigerianBank",
+      "description": "CBN / NIBSS NIP participating Nigerian bank directory entry.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 10,
+          "pattern": "^[0-9]+$",
+          "description": "CBN bank institution code."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Official bank name."
+        },
+        "shortName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30,
+          "description": "Short display label."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["code", "name", "shortName", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator role assignment document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the administrator."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 120,
+          "description": "Admin email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["SuperAdmin", "Compliance Officer"],
+          "description": "Administrative role level."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profiles and KYC tier states (owner or admin read-only)."
+    },
+    "/wallets/{userId}": {
+      "schema": { "$ref": "#/entities/WalletVault" },
+      "description": "Multi-currency wallet balances and card security states per user."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/TransactionRecord" },
+      "description": "Immutable financial transaction ledger scoped to each user."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationAlert" },
+      "description": "User security and settlement notifications."
+    },
+    "/managed_accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/ManagedAccount" },
+      "description": "Compliance directory records managed in the Admin Operations Hub."
+    },
+    "/audit_logs/{auditId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable compliance and user action audit feed."
+    },
+    "/nigerian_banks/{bankCode}": {
+      "schema": { "$ref": "#/entities/NigerianBank" },
+      "description": "Reference directory of CBN / NIBSS NIP participating banks."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted administrator directory for RBAC checks."
+    }
+  }
+}

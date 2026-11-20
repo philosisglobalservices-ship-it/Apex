@@ -1,0 +1,458 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Security Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'philosisglobalservices@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprint: UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'accountCode',
+          'fullName',
+          'email',
+          'phone',
+          'accountType',
+          'kycTierStatus',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'accountCode',
+          'fullName',
+          'email',
+          'phone',
+          'accountType',
+          'kycTierStatus',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.accountCode is string && data.accountCode.size() >= 4 && data.accountCode.size() <= 24
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 80
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 32
+        && data.accountType in ['personal', 'business']
+        && data.kycTierStatus is string && data.kycTierStatus.size() >= 4 && data.kycTierStatus.size() <= 40
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: WalletVault
+    function isValidWalletVault(data) {
+      return data.keys().hasAll([
+          'userId',
+          'usdBalance',
+          'eurBalance',
+          'usdcBalance',
+          'cardFrozen',
+          'accountFrozen',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'usdBalance',
+          'eurBalance',
+          'usdcBalance',
+          'cardFrozen',
+          'accountFrozen',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.userId)
+        && data.usdBalance is number && data.usdBalance >= 0 && data.usdBalance <= 100000000
+        && data.eurBalance is number && data.eurBalance >= 0 && data.eurBalance <= 100000000
+        && data.usdcBalance is number && data.usdcBalance >= 0 && data.usdcBalance <= 100000000
+        && data.cardFrozen is bool
+        && data.accountFrozen is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: TransactionRecord
+    function isValidTransactionRecord(data) {
+      return data.keys().hasAll([
+          'userId',
+          'title',
+          'timestamp',
+          'status',
+          'amount',
+          'currency',
+          'vaultLabel',
+          'type',
+          'icon',
+          'rail',
+          'referenceId',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'title',
+          'timestamp',
+          'status',
+          'amount',
+          'currency',
+          'vaultLabel',
+          'type',
+          'icon',
+          'rail',
+          'recipientName',
+          'recipientTag',
+          'bankCode',
+          'accountNumber',
+          'nibssSessionId',
+          'referenceId',
+          'createdAt'
+        ])
+        && isValidId(data.userId)
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+        && data.timestamp is string && data.timestamp.size() >= 2 && data.timestamp.size() <= 64
+        && data.status is string && data.status.size() >= 2 && data.status.size() <= 60
+        && data.amount is number && data.amount >= -100000000 && data.amount <= 100000000
+        && data.currency in ['USD', 'EUR', 'USDC', 'NGN']
+        && data.vaultLabel is string && data.vaultLabel.size() >= 2 && data.vaultLabel.size() <= 60
+        && data.type in ['inflow', 'outflow', 'yield']
+        && data.icon is string && data.icon.size() >= 2 && data.icon.size() <= 40
+        && data.rail in ['contacts', 'nibss', 'deposit', 'yield']
+        && (!data.keys().hasAny(['recipientName']) || (data.recipientName is string && data.recipientName.size() <= 80))
+        && (!data.keys().hasAny(['recipientTag']) || (data.recipientTag is string && data.recipientTag.size() <= 100))
+        && (!data.keys().hasAny(['bankCode']) || (data.bankCode is string && data.bankCode.size() <= 16))
+        && (!data.keys().hasAny(['accountNumber']) || (data.accountNumber is string && data.accountNumber.size() <= 20))
+        && (!data.keys().hasAny(['nibssSessionId']) || (data.nibssSessionId is string && data.nibssSessionId.size() <= 64))
+        && data.referenceId is string && data.referenceId.size() >= 4 && data.referenceId.size() <= 64
+        && data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: NotificationAlert
+    function isValidNotificationAlert(data) {
+      return data.keys().hasAll([
+          'userId',
+          'title',
+          'detail',
+          'time',
+          'unread',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'title',
+          'detail',
+          'time',
+          'unread',
+          'targetScreen',
+          'createdAt'
+        ])
+        && isValidId(data.userId)
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+        && data.detail is string && data.detail.size() >= 2 && data.detail.size() <= 280
+        && data.time is string && data.time.size() >= 1 && data.time.size() <= 40
+        && data.unread is bool
+        && (!data.keys().hasAny(['targetScreen']) || (data.targetScreen is string && data.targetScreen.size() <= 40))
+        && data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: ManagedAccount
+    function isValidManagedAccount(data) {
+      return data.keys().hasAll([
+          'accountCode',
+          'name',
+          'tier',
+          'avatar',
+          'balance',
+          'kycStatus',
+          'roleLabel',
+          'roleCategory',
+          'limitLabel',
+          'frozen',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'accountCode',
+          'name',
+          'tier',
+          'avatar',
+          'balance',
+          'kycStatus',
+          'roleLabel',
+          'roleCategory',
+          'limitLabel',
+          'alertNote',
+          'frozen',
+          'ownerUid',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.accountCode is string && data.accountCode.size() >= 4 && data.accountCode.size() <= 24
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
+        && data.tier is string && data.tier.size() >= 2 && data.tier.size() <= 60
+        && data.avatar is string && data.avatar.size() <= 300
+        && data.balance is number && data.balance >= 0 && data.balance <= 100000000
+        && data.kycStatus in ['KYC Verified', 'AML Flagged', 'Verified Entity', 'Pending KYC']
+        && data.roleLabel is string && data.roleLabel.size() >= 2 && data.roleLabel.size() <= 60
+        && data.roleCategory in ['Compliance Officer', 'Institutional', 'Personal']
+        && data.limitLabel is string && data.limitLabel.size() >= 2 && data.limitLabel.size() <= 40
+        && (!data.keys().hasAny(['alertNote']) || (data.alertNote is string && data.alertNote.size() <= 200))
+        && (!data.keys().hasAny(['ownerUid']) || isValidId(data.ownerUid))
+        && data.frozen is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: AuditLog
+    function isValidAuditLog(data) {
+      return data.keys().hasAll([
+          'event',
+          'actor',
+          'actorUid',
+          'timeAgo',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'event',
+          'actor',
+          'actorUid',
+          'timeAgo',
+          'createdAt'
+        ])
+        && data.event is string && data.event.size() >= 2 && data.event.size() <= 160
+        && data.actor is string && data.actor.size() >= 2 && data.actor.size() <= 120
+        && isValidId(data.actorUid)
+        && data.timeAgo is string && data.timeAgo.size() >= 1 && data.timeAgo.size() <= 40
+        && data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: NigerianBank
+    function isValidNigerianBank(data) {
+      return data.keys().hasAll(['code', 'name', 'shortName', 'updatedAt'])
+        && data.keys().hasOnly(['code', 'name', 'shortName', 'updatedAt'])
+        && data.code is string && data.code.size() >= 3 && data.code.size() <= 10 && data.code.matches('^[0-9]+$')
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
+        && data.shortName is string && data.shortName.size() >= 2 && data.shortName.size() <= 30
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: AdminRecord
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'role', 'createdAt'])
+        && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.role in ['SuperAdmin', 'Compliance Officer']
+        && data.createdAt is timestamp;
+    }
+
+    // Connectivity Health Check Path (Read-Only, No PII)
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // 1. User Profiles (Strict PII Isolation: Owner or Admin only)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedUser()
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().accountCode == existing().accountCode
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly([
+            'fullName', 'phone', 'accountType', 'kycTierStatus', 'updatedAt'
+          ]))
+        );
+      allow delete: if false;
+    }
+
+    // 2. Multi-Currency Wallet Vaults
+    match /wallets/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidWalletVault(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().accountFrozen == false
+        && incoming().usdBalance <= 100000
+        && incoming().eurBalance <= 100000
+        && incoming().usdcBalance <= 100000
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedUser()
+        && isValidWalletVault(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['cardFrozen', 'updatedAt'])
+          ) ||
+          (
+            isOwner(userId)
+            && existing().accountFrozen == false
+            && incoming().diff(existing()).affectedKeys().hasOnly(['usdBalance', 'eurBalance', 'usdcBalance', 'updatedAt'])
+            && incoming().usdBalance <= existing().usdBalance + 250000
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 3. Immutable Financial Transaction Ledger
+    match /transactions/{transactionId} {
+      allow get: if isValidId(transactionId) && isVerifiedUser() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(transactionId)
+        && isVerifiedUser()
+        && isValidTransactionRecord(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/wallets/$(request.auth.uid));
+      allow update, delete: if false;
+    }
+
+    // 4. User Notifications
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && isVerifiedUser() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(notificationId)
+        && isVerifiedUser()
+        && isValidNotificationAlert(incoming())
+        && (incoming().userId == request.auth.uid || isAdmin())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(notificationId)
+        && isVerifiedUser()
+        && isValidNotificationAlert(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && (
+          isAdmin() ||
+          (resource.data.userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['unread']))
+        );
+      allow delete: if isValidId(notificationId) && isAdmin();
+    }
+
+    // 5. Compliance Directory (Managed Accounts)
+    match /managed_accounts/{accountId} {
+      allow get: if isValidId(accountId) && isAdmin();
+      allow list: if isVerifiedUser() && (
+        request.auth.token.email == 'philosisglobalservices@gmail.com' ||
+        resource.data.ownerUid == request.auth.uid
+      );
+      allow create: if isValidId(accountId)
+        && isVerifiedUser()
+        && isValidManagedAccount(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            incoming().keys().hasAny(['ownerUid'])
+            && incoming().ownerUid == request.auth.uid
+            && incoming().kycStatus == 'Pending KYC'
+            && incoming().frozen == false
+          )
+        );
+      allow update: if isValidId(accountId)
+        && isVerifiedUser()
+        && isValidManagedAccount(incoming())
+        && incoming().accountCode == existing().accountCode
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().keys().hasAny(['ownerUid'])
+            && existing().ownerUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'kycStatus', 'limitLabel', 'updatedAt'])
+            && incoming().kycStatus in ['Pending KYC', 'KYC Verified']
+          )
+        );
+      allow delete: if isValidId(accountId) && isAdmin();
+    }
+
+    // 6. Immutable Audit Logs
+    match /audit_logs/{auditId} {
+      allow get: if isValidId(auditId) && isAdmin();
+      allow list: if isVerifiedUser() && (
+        request.auth.token.email == 'philosisglobalservices@gmail.com' ||
+        resource.data.actorUid == request.auth.uid
+      );
+      allow create: if isValidId(auditId)
+        && isVerifiedUser()
+        && isValidAuditLog(incoming())
+        && (incoming().actorUid == request.auth.uid || isAdmin())
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // 7. Nigerian Bank Reference Directory
+    match /nigerian_banks/{bankCode} {
+      allow get: if isValidId(bankCode);
+      allow list: if true;
+      allow create, update: if isValidId(bankCode)
+        && isAdmin()
+        && isValidNigerianBank(incoming())
+        && incoming().code == bankCode
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(bankCode) && isAdmin();
+    }
+
+    // 8. Admin Role Registry
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow create, update: if isValidId(userId)
+        && isAdmin()
+        && isValidAdminRecord(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time;
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+  }
+}
